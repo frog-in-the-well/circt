@@ -205,9 +205,11 @@ performBinaryCombOp(ModU, urem);
 
 performVariadicCombOp(Mul, op1 *op2);
 
-void Solver::Circuit::performMux(mlir::Value result, mlir::Value cond,
-                                 mlir::Value trueValue,
-                                 mlir::Value falseValue) {
+mlir::LogicalResult Solver::Circuit::performMux(mlir::Value result,
+                                                mlir::Value cond,
+                                                mlir::Value trueValue,
+                                                mlir::Value falseValue,
+                                                bool twoState) {
   LLVM_DEBUG(lec::dbgs << name << " performMux\n");
   INDENT();
   LLVM_DEBUG(lec::dbgs << "cond:\n");
@@ -216,9 +218,14 @@ void Solver::Circuit::performMux(mlir::Value result, mlir::Value cond,
   z3::expr tvalue = fetchExpr(trueValue);
   LLVM_DEBUG(lec::dbgs << "falseValue:\n");
   z3::expr fvalue = fetchExpr(falseValue);
+  // Multi-valued mux behavior is not supported.
+  if (!twoState) {
+    return mlir::failure();
+  }
   // Conversion due to z3::ite requiring a bool rather than a bitvector.
   z3::expr mux = z3::ite(bvToBool(condExpr), tvalue, fvalue);
   constrainResult(result, mux);
+  return mlir::success();
 }
 
 performVariadicCombOp(Or, op1 | op2);
@@ -271,6 +278,16 @@ performBinaryCombOp(ShrU, lshr);
 performVariadicCombOp(Sub, op1 - op2);
 
 performVariadicCombOp(Xor, op1 ^ op2);
+
+//===----------------------------------------------------------------------===//
+// `comb` dialect operations
+//===----------------------------------------------------------------------===//
+
+void Solver::Circuit::addConstantX(mlir::Value result) {
+  LLVM_DEBUG(lec::dbgs << name << " addConstantX\n");
+  INDENT();
+  allocateValue(result);
+}
 
 /// Helper function for performing a variadic operation: it executes a lambda
 /// over a range of operands.

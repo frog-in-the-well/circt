@@ -19,6 +19,8 @@
 #include "circt/Dialect/Comb/CombVisitors.h"
 #include "circt/Dialect/HW/HWOps.h"
 #include "circt/Dialect/HW/HWVisitors.h"
+#include "circt/Dialect/SV/SVOps.h"
+#include "circt/Dialect/SV/SVVisitors.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Support/LogicalResult.h"
@@ -49,7 +51,17 @@ private:
         public circt::hw::TypeOpVisitor<Visitor, mlir::LogicalResult,
                                         Solver::Circuit *>,
         public circt::comb::CombinationalVisitor<Visitor, mlir::LogicalResult,
-                                                 Solver::Circuit *> {
+                                                 Solver::Circuit *>,
+        public circt::sv::Visitor<Visitor, mlir::LogicalResult,
+                                  Solver::Circuit *> {
+    /// sv::Visitor definitions
+    static mlir::LogicalResult visitSV(circt::sv::ConstantXOp &op,
+                                       Solver::Circuit *circuit);
+
+    /// Collects unhandled `sv` operations.
+    static mlir::LogicalResult visitSV(mlir::Operation *op,
+                                       Solver::Circuit *circuit);
+
     // StmtVisitor definitions
     // Handle implemented `hw` statement operations.
     static mlir::LogicalResult visitStmt(circt::hw::InstanceOp &op,
@@ -117,6 +129,10 @@ private:
     static mlir::LogicalResult visitComb(circt::comb::SubOp &op,
                                          Solver::Circuit *circuit);
     static mlir::LogicalResult visitComb(circt::comb::XorOp &op,
+                                         Solver::Circuit *circuit);
+
+    /// Handles invalid `comb` statement operations.
+    mlir::LogicalResult visitInvalidComb(mlir::Operation *op,
                                          Solver::Circuit *circuit);
 
     // Additional definitions

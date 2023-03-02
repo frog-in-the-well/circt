@@ -56,10 +56,12 @@ debugOpResults(mlir::OpTrait::VariadicResults<ConcreteOp> *op) {
 /// an operation's list of attributes.
 static inline void
 debugAttributes(llvm::ArrayRef<mlir::NamedAttribute> attributes) {
-  lec::dbgs << "Attributes:\n";
-  INDENT();
-  for (mlir::NamedAttribute attr : attributes) {
-    lec::dbgs << attr.getName().getValue() << ": " << attr.getValue() << "\n";
+  if (!attributes.empty()) {
+    lec::dbgs << "Attributes:\n";
+    INDENT();
+    for (mlir::NamedAttribute attr : attributes) {
+      lec::dbgs << attr.getName().getValue() << ": " << attr.getValue() << "\n";
+    }
   }
 }
 } // anonymous namespace
@@ -274,14 +276,15 @@ LogicExporter::Visitor::visitComb(circt::comb::MuxOp &op,
                                   Solver::Circuit *circuit) {
   LLVM_DEBUG(lec::dbgs << "Visiting comb.mux\n");
   INDENT();
+  LLVM_DEBUG(debugAttributes(op->getAttrs()));
   LLVM_DEBUG(debugOperands(op));
+  bool twoState = op.getTwoState();
   mlir::Value cond = op.getCond();
   mlir::Value trueValue = op.getTrueValue();
   mlir::Value falseValue = op.getFalseValue();
   mlir::Value result = op.getResult();
   LLVM_DEBUG(debugOpResult(result));
-  circuit->performMux(result, cond, trueValue, falseValue);
-  return mlir::success();
+  return circuit->performMux(result, cond, trueValue, falseValue, twoState);
 }
 
 visitVariadicCombOp(Or, comb.or, circt::comb::OrOp &);
@@ -299,6 +302,35 @@ visitBinaryCombOp(ShrU, comb.shru, circt::comb::ShrUOp &);
 visitVariadicCombOp(Sub, comb.sub, circt::comb::SubOp &);
 
 visitVariadicCombOp(Xor, comb.xor, circt::comb::XorOp &);
+
+/// Handles invalid `comb` statement operations.
+mlir::LogicalResult
+LogicExporter::Visitor::visitInvalidComb(mlir::Operation *op,
+                                         Solver::Circuit *circuit) {
+  // op is not valid for StmtVisitor.
+  // Attempt dispatching it to TypeOpVisitor next.
+  return dispatchSVVisitor(op, circuit);
+}
+
+//===----------------------------------------------------------------------===//
+// sv::Visitor implementation
+//===----------------------------------------------------------------------===//
+
+mlir::LogicalResult LogicExporter::Visitor::visitSV(circt::sv::ConstantXOp &op,
+                                                    Solver::Circuit *circuit) {
+  LLVM_DEBUG(lec::dbgs << "Visiting sv.constantX\n");
+  INDENT();
+  mlir::Value result = op.getResult();
+  LLVM_DEBUG(debugOpResult(result));
+  circuit->addConstantX(result);
+  return mlir::success();
+}
+
+/// Collects unhandled `sv` statement operations.
+mlir::LogicalResult LogicExporter::Visitor::visitSV(mlir::Operation *op,
+                                                    Solver::Circuit *circuit) {
+  return visitUnhandledOp(op);
+}
 
 //===----------------------------------------------------------------------===//
 // Additional Visitor implementations

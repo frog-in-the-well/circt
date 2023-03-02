@@ -145,7 +145,8 @@ int main(int argc, char **argv) {
 
   // Register the supported CIRCT dialects and create a context to work with.
   mlir::DialectRegistry registry;
-  registry.insert<circt::comb::CombDialect, circt::hw::HWDialect>();
+  registry.insert<circt::comb::CombDialect, circt::hw::HWDialect,
+                  circt::sv::SVDialect>();
   mlir::MLIRContext context(registry);
 
   // Setup of diagnostic handling.

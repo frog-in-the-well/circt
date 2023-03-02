@@ -96,7 +96,7 @@ hw.module @addTwice(%in: i2) -> (out: i2) {
 //  COMB_MUX: c1 == c2
 
 hw.module @mux(%cond: i1, %tvalue: i8, %fvalue: i8) -> (out: i8) {
-  %res = comb.mux %cond, %tvalue, %fvalue : i8
+  %res = comb.mux bin %cond, %tvalue, %fvalue : i8
   hw.output %res : i8
 }
 
@@ -179,15 +179,15 @@ hw.module @decomposedShl(%in1: i2, %in2: i2) -> (out: i2) {
   %two = hw.constant 2 : i2
   // first possible shift
   %cond1 = comb.icmp ugt %in2, %zero : i2
-  %mul1 = comb.mux %cond1, %two, %one : i2
+  %mul1 = comb.mux bin %cond1, %two, %one : i2
   %shl1 = comb.mul %in1, %mul1 : i2
   // avoid subtraction underflow
   %cond1_1 = comb.icmp eq %in2, %zero : i2
-  %sub1 = comb.mux %cond1_1, %zero, %one : i2
+  %sub1 = comb.mux bin %cond1_1, %zero, %one : i2
   %in2_2 = comb.sub %in2, %sub1 : i2
   // second possible shift
   %cond2 = comb.icmp ugt %in2_2, %zero : i2
-  %mul2 = comb.mux %cond2, %two, %one : i2
+  %mul2 = comb.mux bin %cond2, %two, %one : i2
   %shl2 = comb.mul %shl1, %mul2 : i2
   hw.output %shl2 : i2
 }

@@ -62,8 +62,9 @@ public:
   void performModS(mlir::Value result, mlir::Value lhs, mlir::Value rhs);
   void performModU(mlir::Value result, mlir::Value lhs, mlir::Value rhs);
   void performMul(mlir::Value result, mlir::OperandRange operands);
-  void performMux(mlir::Value result, mlir::Value cond, mlir::Value trueValue,
-                  mlir::Value falseValue);
+  mlir::LogicalResult performMux(mlir::Value result, mlir::Value cond,
+                                 mlir::Value trueValue, mlir::Value falseValue,
+                                 bool twoState);
   void performOr(mlir::Value result, mlir::OperandRange operands);
   void performParity(mlir::Value result, mlir::Value input);
   void performReplicate(mlir::Value result, mlir::Value input);
@@ -72,6 +73,9 @@ public:
   void performShrU(mlir::Value result, mlir::Value lhs, mlir::Value rhs);
   void performSub(mlir::Value result, mlir::OperandRange operands);
   void performXor(mlir::Value result, mlir::OperandRange operands);
+
+  // `sv` dialect operations.
+  void addConstantX(mlir::Value result);
 
 private:
   /// Helper function for performing a variadic operation: it executes a lambda
